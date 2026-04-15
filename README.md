@@ -1,2 +1,2 @@
 # SanGiaoDich
-Platform where allowed user market easily and safe
+An e-commerce platform
