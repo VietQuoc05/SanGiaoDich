@@ -1,7 +1,6 @@
 package com.ecommerce.security;
 
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
+import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -17,7 +16,7 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
 
-    private final JwtUtil jwtUtil;
+    private final JwtService jwtService;
     private final CustomUserDetailsService userDetailsService;
 
     @Override
@@ -33,13 +32,8 @@ public class JwtFilter extends OncePerRequestFilter {
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
-
-            try {
-                username = jwtUtil.extractUsername(token);
-                System.out.println("JWT username: " + username);
-            } catch (Exception e) {
-                System.out.println("JWT invalid");
-            }
+            username = jwtService.extractUsername(token);
+            System.out.println("JWT username: " + username);
         }
 
         if (username != null &&
@@ -48,7 +42,7 @@ public class JwtFilter extends OncePerRequestFilter {
             UserDetails userDetails =
                     userDetailsService.loadUserByUsername(username);
 
-            if (jwtUtil.validateToken(token)) {
+            if (jwtService.validateToken(token)) {
 
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(

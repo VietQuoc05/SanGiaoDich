@@ -4,6 +4,8 @@ import com.ecommerce.security.dto.LoginRequest;
 import com.ecommerce.user.User;
 import com.ecommerce.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -13,31 +15,34 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtService jwtService;
+    private final JwtUtil jwtUtil;
+    private final AuthenticationManager authenticationManager;
 
+    // 🔥 LOGIN
     public String login(LoginRequest request) {
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Wrong password");
-        }
+        // authenticate
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.getUsername(),
+                        request.getPassword()
+                )
+        );
 
-        return jwtService.generateToken(user.getUsername());
+        // generate token
+        return jwtUtil.generateToken(request.getUsername());
     }
 
+    // 🔥 REGISTER
     public User register(String username, String password) {
-
-        if (userRepository.findByUsername(username).isPresent()) {
-            throw new RuntimeException("Username already exists");
-        }
 
         User user = User.builder()
                 .username(username)
                 .password(passwordEncoder.encode(password))
                 .role("ROLE_USER")
+                .supplierRequest(false)
                 .build();
 
-        return userRepository.save(user);
+        return userRepository.save(user); // 🔥 RETURN USER
     }
 }

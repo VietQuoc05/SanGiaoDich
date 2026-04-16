@@ -18,7 +18,7 @@ public class JwtService {
 
     public String generateToken(String username) {
         return Jwts.builder()
-                .setSubject(username) // ⚠️ 0.11.5 dùng setSubject
+                .setSubject(username)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60))
                 .signWith(getSignKey(), SignatureAlgorithm.HS256)
@@ -26,24 +26,24 @@ public class JwtService {
     }
 
     public String extractUsername(String token) {
-        return extractAllClaims(token).getSubject();
+        return Jwts.parserBuilder()
+                .setSigningKey(getSignKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject();
     }
 
     public boolean validateToken(String token) {
         try {
-            extractAllClaims(token);
+            Jwts.parserBuilder()
+                    .setSigningKey(getSignKey())
+                    .build()
+                    .parseClaimsJws(token);
             return true;
         } catch (Exception e) {
-            System.out.println("JWT invalid: " + e.getMessage());
+            System.out.println("JWT invalid");
             return false;
         }
-    }
-
-    private Claims extractAllClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getSignKey()) // ⚠️ dùng parserBuilder
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
     }
 }

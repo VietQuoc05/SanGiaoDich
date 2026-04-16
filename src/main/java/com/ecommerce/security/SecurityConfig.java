@@ -3,15 +3,17 @@ package com.ecommerce.security;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
+@EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -19,43 +21,69 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+
         http
-                // ❌ tắt CSRF
                 .csrf(csrf -> csrf.disable())
 
-                // 🔥 FIX QUAN TRỌNG
-                .cors(Customizer.withDefaults())
+                .authorizeHttpRequests(auth -> auth
 
-                // ❌ tắt login mặc định
-                .httpBasic(httpBasic -> httpBasic.disable())
-                .formLogin(form -> form.disable())
+                        // 🔓 PUBLIC
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 
-                // ✅ stateless (JWT)
+                        // 🔓 PRODUCT (ai cũng xem được)
+                        .requestMatchers("/api/products/**").permitAll()
+
+                        // 👤 USER + SUPPLIER (cart)
+                        .requestMatchers("/api/cart/**")
+                        .hasAnyAuthority("USER", "SUPPLIER")
+
+                        // 👤 USER gửi request
+                        .requestMatchers("/api/supplier/request")
+                        .hasAuthority("USER")
+
+                        // 👑 ADMIN xử lý supplier request
+                        .requestMatchers("/api/supplier/requests")
+                        .hasAuthority("ADMIN")
+                        .requestMatchers("/api/supplier/approve/**")
+                        .hasAuthority("ADMIN")
+                        .requestMatchers("/api/supplier/reject/**")
+                        .hasAuthority("ADMIN")
+
+                        // 🏪 SUPPLIER quản lý product
+                        .requestMatchers("/api/products/create")
+                        .hasAuthority("SUPPLIER")
+                        .requestMatchers("/api/products/update/**")
+                        .hasAuthority("SUPPLIER")
+                        .requestMatchers("/api/products/delete/**")
+                        .hasAuthority("SUPPLIER")
+
+                        // 🔐 còn lại phải login
+                        .anyRequest().authenticated()
+                )
+
+                // ❌ không dùng session
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
-                // ✅ phân quyền
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers(
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html"
-                        ).permitAll()
-                        .anyRequest().authenticated()
-                )
-
-                // ✅ JWT filter
+                // 🔥 JWT filter
                 .addFilterBefore(jwtFilter,
-                        UsernamePasswordAuthenticationFilter.class
+                        org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class
                 );
 
         return http.build();
     }
 
+    // 🔐 encode password
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    // 🔑 authentication manager
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
     }
 }

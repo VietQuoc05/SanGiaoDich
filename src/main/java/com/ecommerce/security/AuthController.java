@@ -14,12 +14,14 @@ public class AuthController {
 
     private final AuthService authService;
 
+    // 🔥 LOGIN
     @PostMapping("/login")
     public LoginResponse login(@RequestBody LoginRequest request) {
         String token = authService.login(request);
         return new LoginResponse(token);
     }
 
+    // 🔥 REGISTER
     @PostMapping("/register")
     public User register(@RequestBody LoginRequest request) {
         return authService.register(
