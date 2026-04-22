@@ -1,11 +1,12 @@
 package com.ecommerce.cart;
 
 import com.ecommerce.product.Product;
-import com.ecommerce.user.User;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
+@Table(name = "cart_items")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -17,11 +18,15 @@ public class CartItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    private User user;
+    private Integer quantity;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
-    private int quantity;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cart_id", nullable = false)
+
+    @JsonIgnore // 🔥 FIX LOOP
+    private Cart cart;
 }

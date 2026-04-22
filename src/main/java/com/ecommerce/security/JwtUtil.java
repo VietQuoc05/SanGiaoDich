@@ -16,22 +16,26 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(SECRET.getBytes());
     }
 
-    // 🔥 generate token
-    public String generateToken(String username) {
+    // 🔥 FIX: thêm role vào token
+    public String generateToken(String username, String role) {
         return Jwts.builder()
-                .setSubject(username) // ❗ đúng API 0.11.5
+                .setSubject(username)
+                .claim("role", role) // ✅ QUAN TRỌNG
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60))
                 .signWith(getSignKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    // 🔥 extract username
     public String extractUsername(String token) {
         return getClaims(token).getSubject();
     }
 
-    // 🔥 validate token
+    // 🔥 NEW: lấy role từ token
+    public String extractRole(String token) {
+        return getClaims(token).get("role", String.class);
+    }
+
     public boolean validateToken(String token) {
         try {
             getClaims(token);
@@ -43,7 +47,7 @@ public class JwtUtil {
 
     private Claims getClaims(String token) {
         return Jwts.parserBuilder()
-                .setSigningKey(getSignKey()) // ❗ đúng API
+                .setSigningKey(getSignKey())
                 .build()
                 .parseClaimsJws(token)
                 .getBody();

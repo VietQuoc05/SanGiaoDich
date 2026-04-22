@@ -16,7 +16,7 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
 
-    private final JwtService jwtService;
+    private final JwtUtil jwtUtil; // 🔥 FIX
     private final CustomUserDetailsService userDetailsService;
 
     @Override
@@ -30,19 +30,26 @@ public class JwtFilter extends OncePerRequestFilter {
         String token = null;
         String username = null;
 
+        // 🔥 Lấy token
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
-            username = jwtService.extractUsername(token);
-            System.out.println("JWT username: " + username);
+
+            try {
+                username = jwtUtil.extractUsername(token);
+                System.out.println("JWT username: " + username);
+            } catch (Exception e) {
+                System.out.println("JWT invalid");
+            }
         }
 
+        // 🔥 Nếu chưa authenticate
         if (username != null &&
                 SecurityContextHolder.getContext().getAuthentication() == null) {
 
             UserDetails userDetails =
                     userDetailsService.loadUserByUsername(username);
 
-            if (jwtService.validateToken(token)) {
+            if (jwtUtil.validateToken(token)) {
 
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(
@@ -57,7 +64,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
                 SecurityContextHolder.getContext().setAuthentication(authToken);
 
-                System.out.println("AUTH SUCCESS");
+                System.out.println("AUTH SUCCESS: " + userDetails.getAuthorities());
             }
         }
 

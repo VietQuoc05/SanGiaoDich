@@ -20,6 +20,7 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(columnDefinition = "NVARCHAR(50)")
     private String name;
 
     @Column(columnDefinition = "NVARCHAR(MAX)")

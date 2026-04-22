@@ -1,9 +1,6 @@
 package com.ecommerce.cart;
 
-import com.ecommerce.product.Product;
-import com.ecommerce.product.ProductRepository;
-import com.ecommerce.user.User;
-import com.ecommerce.user.UserRepository;
+import com.ecommerce.cart.dto.CartResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -11,25 +8,34 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/cart")
 @RequiredArgsConstructor
+@CrossOrigin("*")
 public class CartController {
 
-    private final CartRepository cartRepo;
-    private final ProductRepository productRepo;
-    private final UserRepository userRepo;
+    private final CartService cartService;
 
-    @PostMapping("/{productId}")
-    public String addToCart(@PathVariable Long productId, Authentication auth) {
-        User user = userRepo.findByUsername(auth.getName()).orElseThrow();
-        Product product = productRepo.findById(productId).orElseThrow();
+    @GetMapping
+    public CartResponse get(Authentication auth) {
+        return cartService.getCart(auth.getName());
+    }
 
-        CartItem item = CartItem.builder()
-                .user(user)
-                .product(product)
-                .quantity(1)
-                .build();
+    @PostMapping("/add")
+    public CartResponse add(
+            @RequestParam Long productId,
+            @RequestParam Integer quantity,
+            Authentication auth
+    ) {
+        return cartService.addToCart(productId, quantity, auth.getName());
+    }
 
-        cartRepo.save(item);
+    @DeleteMapping("/remove/{itemId}")
+    public String remove(@PathVariable Long itemId, Authentication auth) {
+        cartService.removeItem(itemId, auth.getName());
+        return "Removed";
+    }
 
-        return "Added to cart";
+    @DeleteMapping("/clear")
+    public String clear(Authentication auth) {
+        cartService.clearCart(auth.getName());
+        return "Cleared";
     }
 }

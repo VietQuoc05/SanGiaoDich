@@ -2,5 +2,8 @@ package com.ecommerce.cart;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface CartRepository extends JpaRepository<CartItem, Long> {
+import java.util.Optional;
+
+public interface CartRepository extends JpaRepository<Cart, Long> {
+    Optional<Cart> findByUserUsername(String username);
 }

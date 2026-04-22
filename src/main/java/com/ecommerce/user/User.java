@@ -16,21 +16,22 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true, nullable = false)
     private String username;
 
+    @Column(nullable = false)
     private String password;
 
-    // ⚠️ DB đang là ROLE_USER
+    // 🔥 PHẢI LÀ: ROLE_USER / ROLE_SUPPLIER / ROLE_ADMIN
+    @Column(nullable = false)
     private String role;
 
-    // ===== NEW FIELDS =====
     private String phone;
 
     private String gender;
 
     private Integer yearOfBirth;
 
-    // 🔥 FIX LỖI SQL
     @Column(nullable = false)
     private boolean supplierRequest = false;
 }

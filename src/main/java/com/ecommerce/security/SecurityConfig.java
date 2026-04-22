@@ -3,6 +3,7 @@ package com.ecommerce.security;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -27,61 +28,62 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
 
-                        // 🔓 PUBLIC
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        // 🔥 FIX CORS
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // 🔓 PRODUCT (ai cũng xem được)
+                        // ================= PUBLIC =================
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
+
+                        // ================= PRODUCT =================
                         .requestMatchers("/api/products/**").permitAll()
 
-                        // 👤 USER + SUPPLIER (cart)
+                        // ================= CART =================
                         .requestMatchers("/api/cart/**")
-                        .hasAnyAuthority("USER", "SUPPLIER")
+                        .hasAnyRole("USER", "SUPPLIER")
 
-                        // 👤 USER gửi request
-                        .requestMatchers("/api/supplier/request")
-                        .hasAuthority("USER")
+                        // ================= ORDER =================
+                        .requestMatchers("/api/orders/checkout").hasRole("USER")
+                        .requestMatchers("/api/orders/my").hasRole("USER")
+                        .requestMatchers("/api/orders/**")
+                        .hasAnyRole("USER", "SUPPLIER")
 
-                        // 👑 ADMIN xử lý supplier request
-                        .requestMatchers("/api/supplier/requests")
-                        .hasAuthority("ADMIN")
-                        .requestMatchers("/api/supplier/approve/**")
-                        .hasAuthority("ADMIN")
-                        .requestMatchers("/api/supplier/reject/**")
-                        .hasAuthority("ADMIN")
+                        // ================= PAYMENT =================
+                        .requestMatchers("/api/payments/**").permitAll()
 
-                        // 🏪 SUPPLIER quản lý product
-                        .requestMatchers("/api/products/create")
-                        .hasAuthority("SUPPLIER")
-                        .requestMatchers("/api/products/update/**")
-                        .hasAuthority("SUPPLIER")
-                        .requestMatchers("/api/products/delete/**")
-                        .hasAuthority("SUPPLIER")
+                        // ================= SUPPLIER =================
+                        .requestMatchers("/api/products/create").hasRole("SUPPLIER")
+                        .requestMatchers("/api/products/update/**").hasRole("SUPPLIER")
+                        .requestMatchers("/api/products/delete/**").hasRole("SUPPLIER")
 
-                        // 🔐 còn lại phải login
+                        // ================= ADMIN =================
+                        .requestMatchers("/api/supplier/**").hasRole("ADMIN")
+
+                        // ================= DEFAULT =================
                         .anyRequest().authenticated()
                 )
 
-                // ❌ không dùng session
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
-                // 🔥 JWT filter
-                .addFilterBefore(jwtFilter,
+                .addFilterBefore(
+                        jwtFilter,
                         org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class
                 );
 
         return http.build();
     }
 
-    // 🔐 encode password
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // 🔑 authentication manager
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();

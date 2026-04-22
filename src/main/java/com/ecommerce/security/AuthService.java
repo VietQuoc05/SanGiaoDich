@@ -18,6 +18,7 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
 
+    // 🔥 LOGIN
     public LoginResponse login(LoginRequest request) {
 
         authenticationManager.authenticate(
@@ -27,19 +28,28 @@ public class AuthService {
                 )
         );
 
-        User user = userRepo.findByUsername(request.getUsername()).orElseThrow();
+        User user = userRepo.findByUsername(request.getUsername())
+                .orElseThrow();
 
-        String token = jwtUtil.generateToken(user.getUsername());
+        // 🔥 FIX: truyền role vào token
+        String token = jwtUtil.generateToken(
+                user.getUsername(),
+                user.getRole()
+        );
 
-        return new LoginResponse(token, user.getRole());
+        return new LoginResponse(
+                token,
+                user.getRole()
+        );
     }
 
+    // 🔥 REGISTER
     public User register(String username, String password) {
 
         User user = User.builder()
                 .username(username)
                 .password(passwordEncoder.encode(password))
-                .role("ROLE_USER")
+                .role("ROLE_USER") // ⚠️ phải có ROLE_
                 .supplierRequest(false)
                 .build();
 
